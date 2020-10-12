@@ -1,6 +1,7 @@
 import os
 from PIL import Image
 import torchvision.transforms as transforms
+import random
 
 
 class CustomDataset(object):
@@ -12,9 +13,17 @@ class CustomDataset(object):
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         # load all image files
         self.imgs = list()
+        amounts = dict()
         for cat_name in os.listdir(os.path.join(root, "category_imgs")):
+            amounts[cat_name] = len(os.listdir(os.path.join(root, "category_imgs", cat_name)))
             for img_name in os.listdir(os.path.join(root, "category_imgs", cat_name)):
                 self.imgs.append(os.path.join(cat_name, img_name))
+
+        max_amount = max(amounts.values())
+        for cat_name in amounts.keys():
+            cat_imgs_list = os.listdir(os.path.join(root, "category_imgs", cat_name))
+            for i in range(amounts[cat_name], max_amount):
+                self.imgs.append(os.path.join(cat_name, cat_imgs_list[random.randint(0, len(cat_imgs_list) - 1)]))
 
     def __getitem__(self, idx):
         # load images
