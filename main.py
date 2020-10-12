@@ -68,6 +68,8 @@ print('Finished Training')
 PATH = './cifar_net.pth'
 torch.save(net.state_dict(), PATH)
 
+# --- #
+
 dataiter = iter(data_loader)
 images, labels = dataiter.next()
 print("Truth" + ' '.join('%5s' % inverted_labels[int(labels[j])] for j in range(4)))
