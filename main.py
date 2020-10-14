@@ -4,11 +4,34 @@ from net import Net
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data.sampler import SubsetRandomSampler
+import numpy as np
 
 
 dataset = CustomDataset('')
-data_loader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=True, num_workers=2)
 inverted_labels = {1: 'bird', 2: 'cat', 3: 'dog', 4: 'horse', 5: 'sheep'}
+
+batch_size = 4
+validation_split = .2
+shuffle_dataset = True
+random_seed = 42
+
+dataset_size = len(dataset)
+indices = list(range(dataset_size))
+split = int(np.floor(validation_split * dataset_size))
+if shuffle_dataset:
+    np.random.seed(random_seed)
+    np.random.shuffle(indices)
+train_indices, val_indices = indices[split:], indices[:split]
+
+train_sampler = SubsetRandomSampler(train_indices)
+valid_sampler = SubsetRandomSampler(val_indices)
+
+train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+                                           sampler=train_sampler)
+validation_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+                                                sampler=valid_sampler)
+
 """ Device """
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # print(device)
@@ -22,7 +45,7 @@ optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 for epoch in range(2):  # loop over the dataset multiple times
 
     running_loss = 0.0
-    for i, data in enumerate(data_loader, 0):
+    for i, data in enumerate(train_loader, 0):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data  # [0].to(device), data[1].to(device)
 
