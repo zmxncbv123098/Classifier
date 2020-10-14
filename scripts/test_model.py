@@ -1,12 +1,12 @@
 from dataset import CustomDataset
-from net import Net
+from model import Net
 
 import torch
 
 dataset = CustomDataset('')
 data_loader = torch.utils.data.DataLoader(dataset, batch_size=4, shuffle=True, num_workers=2)
 
-PATH = './cifar_net.pth'
+PATH = '../cifar_net.pth'
 net = Net()
 net.load_state_dict(torch.load(PATH))
 

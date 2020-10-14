@@ -1,5 +1,5 @@
 from dataset import CustomDataset
-from net import Net
+from model import Net
 
 import torch
 import torch.nn as nn
