@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data.sampler import SubsetRandomSampler
 import numpy as np
+import os
 
 
 dataset = CustomDataset('')
@@ -68,5 +69,5 @@ for epoch in range(2):  # loop over the dataset multiple times
 print('Finished Training')
 
 """ Save model """
-PATH = './cifar_net.pth'
+PATH = os.path.join("scripts", "cifar_net.pth")
 torch.save(net.state_dict(), PATH)
