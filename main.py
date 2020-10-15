@@ -7,6 +7,7 @@ import torch.optim as optim
 from torch.utils.data.sampler import SubsetRandomSampler
 import numpy as np
 import os
+import time
 
 
 dataset = CustomDataset('')
@@ -34,21 +35,21 @@ validation_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                                 sampler=valid_sampler)
 
 """ Device """
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# print(device)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
 
 
 net = Net()
-net = net  # .to(device)
+net = net.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-for epoch in range(2):  # loop over the dataset multiple times
+for epoch in range(100):  # loop over the dataset multiple times
 
     running_loss = 0.0
     for i, data in enumerate(train_loader, 0):
         # get the inputs; data is a list of [inputs, labels]
-        inputs, labels = data  # [0].to(device), data[1].to(device)
+        inputs, labels = data[0].to(device), data[1].to(device)
 
         # zero the parameter gradients
         optimizer.zero_grad()
@@ -65,6 +66,10 @@ for epoch in range(2):  # loop over the dataset multiple times
             print('[%d, %5d] loss: %.3f' %
                   (epoch + 1, i + 1, running_loss / 2000))
             running_loss = 0.0
+    if epoch > 0 and epoch % 5 == 0:
+        PATH = os.path.join("scripts", "cifar_net_%s.pth" % str(epoch))
+        torch.save(net.state_dict(), PATH)
+        time.sleep(180)
 
 print('Finished Training')
 
