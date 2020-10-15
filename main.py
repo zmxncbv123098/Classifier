@@ -1,4 +1,4 @@
-from dataset import CustomDataset
+from dataset import CustomDataset, get_transform
 from model import Net
 
 import torch
@@ -15,7 +15,7 @@ def validation(val_loader, epoch):
     total = 0
     with torch.no_grad():
         for data in val_loader:
-            images, labels = data
+            images, labels = data[0].to(device), data[1].to(device)
             outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
@@ -24,7 +24,8 @@ def validation(val_loader, epoch):
     print('Accuracy of the network on the 4385 val images and epoch %s: %d %%' % (epoch+1, 100 * correct / total))
 
 
-dataset = CustomDataset('')
+dataset = CustomDataset('', get_transform(train=True))
+dataset_val = CustomDataset('', get_transform(train=False))
 inverted_labels = {1: 'bird', 2: 'cat', 3: 'dog', 4: 'horse', 5: 'sheep'}
 
 batch_size = 4
@@ -45,7 +46,7 @@ valid_sampler = SubsetRandomSampler(val_indices)
 
 train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                            sampler=train_sampler)
-validation_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
+validation_loader = torch.utils.data.DataLoader(dataset_val, batch_size=batch_size,
                                                 sampler=valid_sampler)
 
 """ Device """
@@ -58,7 +59,7 @@ net = net.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-for epoch in range(100):  # loop over the dataset multiple times
+for epoch in range(2):  # loop over the dataset multiple times
 
     running_loss = 0.0
     for i, data in enumerate(train_loader, 0):

@@ -5,12 +5,9 @@ import random
 
 
 class CustomDataset(object):
-    def __init__(self, root):
+    def __init__(self, root, transform):
         self.root = root
-        self.transform = transforms.Compose(
-            [transforms.Resize((32, 32)),
-             transforms.ToTensor(),
-             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        self.transform = transform
         # load all image files
         self.imgs = list()
         amounts = dict()
@@ -37,3 +34,13 @@ class CustomDataset(object):
 
     def __len__(self):
         return len(self.imgs)
+
+
+def get_transform(train):
+    t = []
+    t.append(transforms.Resize((32, 32)))
+    t.append(transforms.ToTensor())
+    if train:
+        t.append(transforms.RandomHorizontalFlip(0.5))
+    t.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+    return transforms.Compose(t)
