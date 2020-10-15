@@ -10,6 +10,20 @@ import os
 import time
 
 
+def validation(val_loader, epoch):
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in val_loader:
+            images, labels = data
+            outputs = net(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    print('Accuracy of the network on the 4385 val images and epoch %s: %d %%' % (epoch+1, 100 * correct / total))
+
+
 dataset = CustomDataset('')
 inverted_labels = {1: 'bird', 2: 'cat', 3: 'dog', 4: 'horse', 5: 'sheep'}
 
@@ -66,6 +80,8 @@ for epoch in range(100):  # loop over the dataset multiple times
             print('[%d, %5d] loss: %.3f' %
                   (epoch + 1, i + 1, running_loss / 2000))
             running_loss = 0.0
+    validation(validation_loader, epoch)
+
     if epoch > 0 and epoch % 5 == 0:
         PATH = os.path.join("scripts", "cifar_net_%s.pth" % str(epoch))
         torch.save(net.state_dict(), PATH)
@@ -74,5 +90,5 @@ for epoch in range(100):  # loop over the dataset multiple times
 print('Finished Training')
 
 """ Save model """
-PATH = os.path.join("scripts", "cifar_net.pth")
+PATH = os.path.join("cifar_net.pth")
 torch.save(net.state_dict(), PATH)
