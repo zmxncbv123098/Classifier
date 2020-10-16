@@ -38,7 +38,7 @@ class CustomDataset(object):
 
 def get_transform(train):
     t = []
-    t.append(transforms.Resize((32, 32)))
+    t.append(transforms.Resize((32, 32)))  # 224, 224
     t.append(transforms.ToTensor())
     if train:
         t.append(transforms.RandomHorizontalFlip(0.5))

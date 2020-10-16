@@ -1,6 +1,7 @@
 from dataset import CustomDataset, get_transform
 from model import Net
 
+import mlflow
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -21,7 +22,8 @@ def validation(val_loader, epoch):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    print('Accuracy of the network on the 4385 val images and epoch %s: %d %%' % (epoch+1, 100 * correct / total))
+    print('Accuracy of the network on the 4385 val images and epoch %s: %d %%' % (epoch + 1, 100 * correct / total))
+    return 100 * correct / total
 
 
 dataset = CustomDataset('', get_transform(train=True))
@@ -29,6 +31,7 @@ dataset_val = CustomDataset('', get_transform(train=False))
 inverted_labels = {1: 'bird', 2: 'cat', 3: 'dog', 4: 'horse', 5: 'sheep'}
 
 batch_size = 4
+epochs = 100
 validation_split = .2
 shuffle_dataset = True
 random_seed = 42
@@ -53,43 +56,45 @@ validation_loader = torch.utils.data.DataLoader(dataset_val, batch_size=batch_si
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-
 net = Net()
 net = net.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-for epoch in range(2):  # loop over the dataset multiple times
+with mlflow.start_run():
+    mlflow.log_param("Epochs", epochs)
 
-    running_loss = 0.0
-    for i, data in enumerate(train_loader, 0):
-        # get the inputs; data is a list of [inputs, labels]
-        inputs, labels = data[0].to(device), data[1].to(device)
+    for epoch in range(epochs):  # loop over the dataset multiple times
 
-        # zero the parameter gradients
-        optimizer.zero_grad()
+        running_loss = 0.0
+        for i, data in enumerate(train_loader, 0):
+            # get the inputs; data is a list of [inputs, labels]
+            inputs, labels = data[0].to(device), data[1].to(device)
 
-        # forward + backward + optimize
-        outputs = net(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+            # zero the parameter gradients
+            optimizer.zero_grad()
 
-        # print statistics
-        running_loss += loss.item()
-        if i % 2000 == 1999:  # print every 2000 mini-batches
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 2000))
-            running_loss = 0.0
-    validation(validation_loader, epoch)
+            # forward + backward + optimize
+            outputs = net(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
-    if epoch > 0 and epoch % 5 == 0:
-        PATH = os.path.join("scripts", "cifar_net_%s.pth" % str(epoch))
+            # print statistics
+            running_loss += loss.item()
+            if i % 2000 == 1999:  # print every 2000 mini-batches
+                print('[%d, %5d] loss: %.3f' %
+                      (epoch + 1, i + 1, running_loss / 2000))
+                running_loss = 0.0
+        accuracy = validation(validation_loader, epoch)
+        mlflow.log_metric(key="Accuracy of the network", value=accuracy, step=epoch)
+
+        PATH = os.path.join("backup", "cifar_net_%s.pth" % str(epoch + 1))
         torch.save(net.state_dict(), PATH)
         time.sleep(180)
 
-print('Finished Training')
+    print('Finished Training')
 
-""" Save model """
-PATH = os.path.join("cifar_net.pth")
-torch.save(net.state_dict(), PATH)
+    """ Save model """
+    PATH = os.path.join("cifar_net.pth")
+    torch.save(net.state_dict(), PATH)
