@@ -65,7 +65,7 @@ with mlflow.start_run():
     mlflow.log_param("Epochs", epochs)
 
     for epoch in range(epochs):  # loop over the dataset multiple times
-
+        epoch_loss = 0.0
         running_loss = 0.0
         for i, data in enumerate(train_loader, 0):
             # get the inputs; data is a list of [inputs, labels]
@@ -82,19 +82,21 @@ with mlflow.start_run():
 
             # print statistics
             running_loss += loss.item()
+            epoch_loss += loss.item()
             if i % 2000 == 1999:  # print every 2000 mini-batches
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
         accuracy = validation(validation_loader, epoch)
+        mlflow.log_metric(key="Loss", value=epoch_loss / len(train_loader), step=epoch)
         mlflow.log_metric(key="Accuracy of the network", value=accuracy, step=epoch)
 
-        PATH = os.path.join("backup", "cifar_net_%s.pth" % str(epoch + 1))
+        PATH = os.path.join("backup", "net_%s.pth" % str(epoch + 1))
         torch.save(net.state_dict(), PATH)
         time.sleep(180)
 
     print('Finished Training')
 
     """ Save model """
-    PATH = os.path.join("cifar_net.pth")
+    PATH = os.path.join("net.pth")
     torch.save(net.state_dict(), PATH)
