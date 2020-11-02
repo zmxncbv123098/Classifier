@@ -1,17 +1,18 @@
-from dataset import CustomDataset, get_transform
-from model import Net
+import os
+import time
 
-import mlflow
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data.sampler import SubsetRandomSampler
-import numpy as np
-import os
-import time
+import mlflow
+
+from dataset import CustomDataset, get_transform, labels
+from model import Net
 
 
-def validation(val_loader, epoch):
+def validation(val_loader, epoch, val_net):
 
     correct = 0
     total = 0
@@ -19,7 +20,7 @@ def validation(val_loader, epoch):
     with torch.no_grad():
         for data in val_loader:
             images, labels = data[0].to(device), data[1].to(device)
-            outputs = net(images)
+            outputs = val_net(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -30,9 +31,8 @@ def validation(val_loader, epoch):
     return (100 * correct / total), (val_loss / len(val_loader))
 
 
-dataset = CustomDataset('', get_transform(train=True))
-dataset_val = CustomDataset('', get_transform(train=False))
-inverted_labels = {1: 'bird', 2: 'cat', 3: 'dog', 4: 'horse', 5: 'sheep'}
+dataset = CustomDataset(get_transform(train=True), labels)
+dataset_val = CustomDataset(get_transform(train=False), labels)
 
 batch_size = 4
 epochs = 100
@@ -96,7 +96,7 @@ with mlflow.start_run():
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
         # Check-in metric
-        accuracy, val_loss = validation(validation_loader, epoch)
+        accuracy, val_loss = validation(validation_loader, epoch, net)
         mlflow.log_metric(key="Validation Loss", value= val_loss, step=epoch)
         mlflow.log_metric(key="Loss", value=epoch_loss / len(train_loader), step=epoch)
         mlflow.log_metric(key="Accuracy of the network", value=accuracy, step=epoch)

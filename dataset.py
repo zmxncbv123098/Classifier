@@ -5,35 +5,38 @@ import random
 
 
 class CustomDataset(object):
-    def __init__(self, root, transform):
-        self.root = root
+    def __init__(self, transform, labels):
         self.transform = transform
-        # load all image files
-        self.imgs = list()
-        amounts = dict()
-        for cat_name in os.listdir(os.path.join(root, "category_imgs")):
-            amounts[cat_name] = len(os.listdir(os.path.join(root, "category_imgs", cat_name)))
-            for img_name in os.listdir(os.path.join(root, "category_imgs", cat_name)):
-                self.imgs.append(os.path.join(cat_name, img_name))
-
-        max_amount = max(amounts.values())
-        for cat_name in amounts.keys():
-            cat_imgs_list = os.listdir(os.path.join(root, "category_imgs", cat_name))
-            for i in range(amounts[cat_name], max_amount):
-                self.imgs.append(os.path.join(cat_name, cat_imgs_list[random.randint(0, len(cat_imgs_list) - 1)]))
+        self.labels = labels
+        self.imgs = self.get_imgs()
 
     def __getitem__(self, idx):
         # load images
-        img_path = os.path.join(self.root, "category_imgs", self.imgs[idx])
+        img_path = os.path.join("category_imgs", self.imgs[idx])
         img = Image.open(img_path).convert("RGB")
 
         category_name, image_name = os.path.split(self.imgs[idx])
-        labels = {'bird': 1, 'cat': 2, 'dog': 3, 'horse': 4, 'sheep': 5}
 
-        return self.transform(img), labels[category_name]
+        return self.transform(img), self.labels[category_name]
 
     def __len__(self):
         return len(self.imgs)
+
+    @staticmethod
+    def get_imgs():
+        result = list()
+        amounts = dict()
+        for cat_name in os.listdir(os.path.join("category_imgs")):
+            amounts[cat_name] = len(os.listdir(os.path.join("category_imgs", cat_name)))
+            for img_name in os.listdir(os.path.join("category_imgs", cat_name)):
+                result.append(os.path.join(cat_name, img_name))
+
+        max_amount = max(amounts.values())
+        for cat_name in amounts.keys():
+            cat_imgs_list = os.listdir(os.path.join("category_imgs", cat_name))
+            for i in range(amounts[cat_name], max_amount):
+                result.append(os.path.join(cat_name, cat_imgs_list[random.randint(0, len(cat_imgs_list) - 1)]))
+        return result
 
 
 def get_transform(train):
@@ -44,3 +47,6 @@ def get_transform(train):
         t.append(transforms.RandomHorizontalFlip(0.5))
     t.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
     return transforms.Compose(t)
+
+
+labels = {'bird': 1, 'cat': 2, 'dog': 3, 'horse': 4, 'sheep': 5}

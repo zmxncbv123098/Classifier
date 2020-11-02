@@ -1,4 +1,4 @@
-from dataset import CustomDataset
+from dataset import CustomDataset, get_transform, labels
 from model import Net
 import numpy as np
 import torch
@@ -24,7 +24,7 @@ def test_model(PATH, dataset, batch_size, sampler):
                                                                    100 * correct / total))
 
 
-dataset = CustomDataset('')
+dataset = CustomDataset(get_transform(True), labels)
 
 batch_size = 4
 validation_split = .2
