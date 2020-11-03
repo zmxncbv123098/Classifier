@@ -10,8 +10,8 @@ Python simple classifier.
 pip install -r requirements.txt
 ```
 ### Download Data
-Download Coco annotations from [here](http://images.cocodataset.org/annotations/annotations_trainval2017.zip)
-Run `coco_dataset_download.py`
+- Download Coco annotations from [here](http://images.cocodataset.org/annotations/annotations_trainval2017.zip)
+- Run `coco_dataset_download.py`
 
 #### Training and validating your model
 Run the script `main.py` to train your model.
