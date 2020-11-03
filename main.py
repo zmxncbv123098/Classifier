@@ -66,6 +66,7 @@ learning_rate = 0.001
 validation_split = .2
 shuffle_dataset = True
 random_seed = 42
+momentum = 0.9
 
 dataset_size = len(dataset)
 indices = list(range(dataset_size))
@@ -90,12 +91,13 @@ print(device)
 net = Net()
 net = net.to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
+optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=momentum)
 
 with mlflow.start_run():
     mlflow.log_param("Batch size", batch_size)
     mlflow.log_param("Epochs", epochs)
     mlflow.log_param("Learning Rate", learning_rate)
+    mlflow.log_param("Momentum", momentum)
     for epoch in range(epochs):  # loop over the dataset multiple times
 
         train(train_loader, epoch, net)
