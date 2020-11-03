@@ -13,7 +13,7 @@ pip install -r requirements.txt
 - Download Coco annotations from [here](http://images.cocodataset.org/annotations/annotations_trainval2017.zip)
 - Run `coco_dataset_download.py`
 
-#### Training and validating your model
+### Training and validating your model
 Run the script `main.py` to train your model.
 
 Modify `main.py`, `model.py` and `dataset.py` for your assignment, with an aim to make the validation score better.
