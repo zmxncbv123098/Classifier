@@ -1,4 +1,4 @@
-# Classifier
+# Classifier Study
 
 Python simple classifier. 
 
