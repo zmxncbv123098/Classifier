@@ -1,7 +1,7 @@
 import os
-from PIL import Image
 import torchvision.transforms as transforms
 import random
+import cv2
 
 
 class CustomDataset(object):
@@ -13,8 +13,9 @@ class CustomDataset(object):
     def __getitem__(self, idx):
         # load images
         img_path = os.path.join("category_imgs", self.imgs[idx])
-        img = Image.open(img_path).convert("RGB")
-
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, (32, 32))
         category_name, image_name = os.path.split(self.imgs[idx])
 
         return self.transform(img), self.labels[category_name]
@@ -41,7 +42,6 @@ class CustomDataset(object):
 
 def get_transform(train):
     t = []
-    t.append(transforms.Resize((32, 32)))  # 224, 224
     t.append(transforms.ToTensor())
     if train:
         t.append(transforms.RandomHorizontalFlip(0.5))

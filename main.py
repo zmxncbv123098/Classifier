@@ -12,23 +12,47 @@ from dataset import CustomDataset, get_transform, labels
 from model import Net
 
 
-def validation(val_loader, epoch, val_net):
-
+def test_dataset(loader, epoch, net):
     correct = 0
     total = 0
-    val_loss = 0.0
+    data_loss = 0.0
     with torch.no_grad():
-        for data in val_loader:
+        for data in loader:
             images, labels = data[0].to(device), data[1].to(device)
-            outputs = val_net(images)
+            outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
             loss = criterion(outputs, labels)
-            val_loss += loss.item()
+            data_loss += loss.item()
 
-    print('Accuracy of the network on the 4385 val images and epoch %s: %d %%' % (epoch + 1, 100 * correct / total))
-    return (100 * correct / total), (val_loss / len(val_loader))
+    print('Accuracy of the network on the %s images and epoch %s: %d %%' %
+          (len(loader), epoch + 1, 100 * correct / total))
+
+    return (100 * correct / total), (data_loss / len(loader))
+
+
+def train(loader, epoch, net):
+    running_loss = 0.0
+    for i, data in enumerate(loader, 0):
+        # get the inputs; data is a list of [inputs, labels]
+        inputs, labels = data[0].to(device), data[1].to(device)
+
+        # zero the parameter gradients
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        outputs = net(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        # Print statistics
+        running_loss += loss.item()
+        if i % 2000 == 1999:  # Print every 2000 mini-batches
+            print('[%d, %5d] loss: %.3f' %
+                  (epoch + 1, i + 1, running_loss / 2000))
+            running_loss = 0.0
 
 
 dataset = CustomDataset(get_transform(train=True), labels)
@@ -73,33 +97,16 @@ with mlflow.start_run():
     mlflow.log_param("Epochs", epochs)
     mlflow.log_param("Learning Rate", learning_rate)
     for epoch in range(epochs):  # loop over the dataset multiple times
-        epoch_loss = 0.0
-        running_loss = 0.0
-        for i, data in enumerate(train_loader, 0):
-            # get the inputs; data is a list of [inputs, labels]
-            inputs, labels = data[0].to(device), data[1].to(device)
 
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = net(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            # Print statistics
-            running_loss += loss.item()
-            epoch_loss += loss.item()
-            if i % 2000 == 1999:  # Print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
-                running_loss = 0.0
+        train(train_loader, epoch, net)
         # Check-in metric
-        accuracy, val_loss = validation(validation_loader, epoch, net)
-        mlflow.log_metric(key="Validation Loss", value= val_loss, step=epoch)
-        mlflow.log_metric(key="Loss", value=epoch_loss / len(train_loader), step=epoch)
-        mlflow.log_metric(key="Accuracy of the network", value=accuracy, step=epoch)
+        val_accuracy, val_loss = test_dataset(validation_loader, epoch, net)
+        train_accuracy, train_loss = test_dataset(train_loader, epoch, net)
+        mlflow.log_metric(key="Validation Loss", value=val_loss, step=epoch)
+        mlflow.log_metric(key="Train Loss", value=train_loss, step=epoch)
+        mlflow.log_metric(key="Validation Accuracy", value=val_accuracy, step=epoch)
+        mlflow.log_metric(key="Train Accuracy", value=train_accuracy, step=epoch)
+
         if epoch > 0 and epoch % 5 == 0:
             PATH = os.path.join("backup", "net_%s.pth" % str(epoch + 1))
             torch.save(net.state_dict(), PATH)
