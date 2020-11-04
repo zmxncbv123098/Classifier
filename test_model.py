@@ -1,8 +1,10 @@
-from dataset import CustomDataset, get_transform, labels
-from model import Net
 import numpy as np
+
 import torch
 from torch.utils.data import SubsetRandomSampler
+
+from dataset import CustomDataset, get_transform, labels
+from model import Net
 
 
 def test_model(PATH, dataset, batch_size, sampler):
