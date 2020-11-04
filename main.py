@@ -98,9 +98,11 @@ with mlflow.start_run():
     mlflow.log_param("Epochs", epochs)
     mlflow.log_param("Learning Rate", learning_rate)
     mlflow.log_param("Momentum", momentum)
+
     for epoch in range(epochs):  # loop over the dataset multiple times
 
         train(train_loader, epoch, net)
+
         # Check-in metric
         val_accuracy, val_loss = test_dataset(validation_loader, epoch, net)
         train_accuracy, train_loss = test_dataset(train_loader, epoch, net)
