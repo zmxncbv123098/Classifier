@@ -12,7 +12,7 @@ from dataset import CustomDataset, get_transform, labels
 from model import Net
 
 
-def test_dataset(loader, epoch, net):
+def test_dataset(loader, epoch, net, batch_size, loader_name):
     correct = 0
     total = 0
     data_loss = 0.0
@@ -26,8 +26,8 @@ def test_dataset(loader, epoch, net):
             loss = criterion(outputs, labels)
             data_loss += loss.item()
 
-    print('Accuracy of the network on the %s images and epoch %s: %d %%' %
-          (len(loader), epoch + 1, 100 * correct / total))
+    print('Accuracy of the network on the %s %s images and epoch %s: %d %%' %
+          (len(loader) * batch_size, loader_name, epoch + 1, 100 * correct / total))
 
     return (100 * correct / total), (data_loss / len(loader))
 
@@ -60,7 +60,7 @@ dataset_val = CustomDataset(get_transform(train=False), labels)
 
 batch_size = 4
 epochs = 100
-learning_rate = 0.001
+learning_rate = 0.0001
 
 """  Split Dataset  """
 validation_split = .2
@@ -104,8 +104,8 @@ with mlflow.start_run():
         train(train_loader, epoch, net)
 
         # Check-in metric
-        val_accuracy, val_loss = test_dataset(validation_loader, epoch, net)
-        train_accuracy, train_loss = test_dataset(train_loader, epoch, net)
+        val_accuracy, val_loss = test_dataset(validation_loader, epoch, net, batch_size, "train")
+        train_accuracy, train_loss = test_dataset(train_loader, epoch, net, batch_size, "val")
         mlflow.log_metric(key="Validation Loss", value=val_loss, step=epoch)
         mlflow.log_metric(key="Train Loss", value=train_loss, step=epoch)
         mlflow.log_metric(key="Validation Accuracy", value=val_accuracy, step=epoch)
@@ -113,11 +113,11 @@ with mlflow.start_run():
 
         if epoch > 0 and epoch % 5 == 0:
             PATH = os.path.join("backup", "net_%s.pth" % str(epoch + 1))
-            torch.save(net.state_dict(), PATH)
-            time.sleep(180)
+            # torch.save(net.state_dict(), PATH)
+            time.sleep(120)
 
     print('Finished Training')
 
     """ Save model """
     PATH = os.path.join("net.pth")
-    torch.save(net.state_dict(), PATH)
+    # torch.save(net.state_dict(), PATH)
