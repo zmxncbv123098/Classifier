@@ -3,13 +3,14 @@ import random
 
 import torchvision.transforms as transforms
 import cv2
+from pycocotools.coco import COCO
 
 
 class CustomDataset(object):
-    def __init__(self, transform, labels):
+    def __init__(self, transform, labels, ann_filepath, redundancy):
         self.transform = transform
         self.labels = labels
-        self.imgs = self.get_imgs()
+        self.imgs = self.get_imgs(ann_filepath, redundancy)
 
     def __getitem__(self, idx):
         # load images
@@ -25,13 +26,28 @@ class CustomDataset(object):
         return len(self.imgs)
 
     @staticmethod
-    def get_imgs():
+    def get_imgs(filepath, redundancy):
+        coco = COCO(filepath)
+
         result = list()
         amounts = dict()
         for cat_name in os.listdir(os.path.join("category_imgs")):
             amounts[cat_name] = len(os.listdir(os.path.join("category_imgs", cat_name)))
             for img_name in os.listdir(os.path.join("category_imgs", cat_name)):
-                result.append(os.path.join(cat_name, img_name))
+
+                catIds = coco.getCatIds(catNms=[cat_name])
+                img = coco.loadImgs([int(img_name.split(".")[0])])[0]
+                annIds = coco.getAnnIds(imgIds=img['id'], catIds=catIds, iscrowd=None)
+                anns = coco.loadAnns(annIds)
+
+                area = 0
+                for block in anns:
+                    bbox = block["bbox"]
+                    area += bbox[2] * bbox[3]
+
+                height, width = cv2.imread(os.path.join('category_imgs', cat_name, img_name), 0).shape
+                if int((area / (height * width)) * 100) > redundancy:
+                    result.append(os.path.join(cat_name, img_name))
 
         max_amount = max(amounts.values())
         for cat_name in amounts.keys():

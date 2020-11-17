@@ -55,18 +55,27 @@ def train(loader, epoch, net):
             running_loss = 0.0
 
 
-dataset = CustomDataset(get_transform(train=True), labels)
-dataset_val = CustomDataset(get_transform(train=False), labels)
+""" Load Annotations """
 
+folder = 'annotations/'
+filename = 'instances_train2017.json'
+ann_filepath = os.path.join(folder, filename)
+
+""" PARAMS """
 batch_size = 4
 epochs = 100
-learning_rate = 0.0001
+learning_rate = 0.001
+momentum = 0.9
+redundancy = 0
+
+dataset = CustomDataset(get_transform(train=True), labels, ann_filepath, redundancy)
+dataset_val = CustomDataset(get_transform(train=False), labels, ann_filepath, redundancy)
+
 
 """  Split Dataset  """
 validation_split = .2
 shuffle_dataset = True
 random_seed = 42
-momentum = 0.9
 
 dataset_size = len(dataset)
 indices = list(range(dataset_size))
@@ -98,6 +107,8 @@ with mlflow.start_run():
     mlflow.log_param("Epochs", epochs)
     mlflow.log_param("Learning Rate", learning_rate)
     mlflow.log_param("Momentum", momentum)
+    mlflow.log_param("Dataset Size", dataset_size)
+    mlflow.log_param("Adjustment", redundancy)
 
     for epoch in range(epochs):  # loop over the dataset multiple times
 
