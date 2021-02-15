@@ -1,11 +1,13 @@
 import os
 import time
+import copy
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data.sampler import SubsetRandomSampler
+from torchvision import models
 import mlflow
 
 from dataset import CustomDataset, get_transform, labels
@@ -13,6 +15,8 @@ from model import Net
 
 
 def test_dataset(loader, epoch, net, batch_size, loader_name):
+    was_training = net.training
+    net.eval()
     correct = 0
     total = 0
     data_loss = 0.0
@@ -25,10 +29,10 @@ def test_dataset(loader, epoch, net, batch_size, loader_name):
             correct += (predicted == labels).sum().item()
             loss = criterion(outputs, labels)
             data_loss += loss.item()
-
     print('Accuracy of the network on the %s %s images and epoch %s: %d %%' %
           (len(loader) * batch_size, loader_name, epoch + 1, 100 * correct / total))
 
+    net.train(mode=was_training)
     return (100 * correct / total), (data_loss / len(loader))
 
 
@@ -71,7 +75,6 @@ redundancy = 0
 dataset = CustomDataset(get_transform(train=True), labels, ann_filepath, redundancy)
 dataset_val = CustomDataset(get_transform(train=False), labels, ann_filepath, redundancy)
 
-
 """  Split Dataset  """
 validation_split = .2
 shuffle_dataset = True
@@ -85,20 +88,26 @@ if shuffle_dataset:
     np.random.shuffle(indices)
 train_indices, val_indices = indices[split:], indices[:split]
 
-train_sampler = SubsetRandomSampler(train_indices)
-valid_sampler = SubsetRandomSampler(val_indices)
+train_sampler = SubsetRandomSampler(train_indices[:len(train_indices)-(len(train_indices) % 4)])
+valid_sampler = SubsetRandomSampler(val_indices[:len(val_indices)-(len(val_indices) % 4)])
 
 train_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
-                                           sampler=train_sampler)
+                                           sampler=train_sampler, num_workers=4)
 validation_loader = torch.utils.data.DataLoader(dataset_val, batch_size=batch_size,
-                                                sampler=valid_sampler)
+                                                sampler=valid_sampler, num_workers=4)
 
 """  Device  """
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-net = Net()
+# net = Net()
+# net = net.to(device)
+
+net = models.resnet18(pretrained=True)
+num_ftrs = net.fc.in_features
+net.fc = nn.Linear(num_ftrs, 5)
 net = net.to(device)
+
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=momentum)
 
@@ -111,12 +120,16 @@ with mlflow.start_run():
     mlflow.log_param("Adjustment", redundancy)
 
     for epoch in range(epochs):  # loop over the dataset multiple times
-
+        best_model_wts = copy.deepcopy(net.state_dict())
+        best_acc = 0.0
         train(train_loader, epoch, net)
 
         # Check-in metric
-        val_accuracy, val_loss = test_dataset(validation_loader, epoch, net, batch_size, "train")
-        train_accuracy, train_loss = test_dataset(train_loader, epoch, net, batch_size, "val")
+        train_accuracy, train_loss = test_dataset(train_loader, epoch, net, batch_size, "train")
+        val_accuracy, val_loss = test_dataset(validation_loader, epoch, net, batch_size, "val")
+        if val_accuracy > best_acc:
+            best_acc = val_accuracy
+            best_model_wts = copy.deepcopy(net.state_dict())
         mlflow.log_metric(key="Validation Loss", value=val_loss, step=epoch)
         mlflow.log_metric(key="Train Loss", value=train_loss, step=epoch)
         mlflow.log_metric(key="Validation Accuracy", value=val_accuracy, step=epoch)

@@ -17,7 +17,7 @@ class CustomDataset(object):
         img_path = os.path.join("category_imgs", self.imgs[idx])
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = cv2.resize(img, (32, 32))
+        img = cv2.resize(img, (256, 256))  # 32, 32
         category_name, image_name = os.path.split(self.imgs[idx])
 
         return self.transform(img), self.labels[category_name]
@@ -61,9 +61,9 @@ def get_transform(train):
     t = []
     t.append(transforms.ToTensor())
     if train:
-        t.append(transforms.RandomHorizontalFlip(0.5))
-    t.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+        t.append(transforms.RandomHorizontalFlip())
+    t.append(transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]))  # 0.5
     return transforms.Compose(t)
 
 
-labels = {'bird': 1, 'cat': 2, 'dog': 3, 'horse': 4, 'sheep': 5}
+labels = {'bird': 0, 'cat': 1, 'dog': 2, 'horse': 3, 'sheep': 4}
