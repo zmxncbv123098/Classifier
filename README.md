@@ -27,7 +27,4 @@ Modify `main.py`, `model.py` and `dataset.py` for your assignment, with an aim t
 
 ### License
 
-zmxncbv123098verriding design goal for Markdown's
-> formatting syntax is to make it as readable
-> as possible. The idea is that a
-> Markdown-formatted document should be
+zmxncbv123098
